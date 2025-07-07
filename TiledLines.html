@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR" >
+<head>
+  <meta charset="UTF-8" />
+  <title>Moldura com padrão e moldura sólida interna + DLA</title>
+  <style>
+    body, html {
+      margin: 0; padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #333;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <canvas></canvas>
+
+  <script>
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const canvasSize = 300;    // tamanho total do canvas
+    const borderWidth = 20;    // largura da moldura com padrão
+    const innerMargin = 10;    // margem interna entre padrão e moldura sólida
+    const dpr = window.devicePixelRatio || 1;
+
+    // Para que as células fiquem proporcionais à largura da moldura
+    const cellsInBorder = 4;
+    const step = borderWidth / cellsInBorder;
+
+    canvas.width = canvasSize * dpr;
+    canvas.height = canvasSize * dpr;
+    canvas.style.width = canvasSize + 'px';
+    canvas.style.height = canvasSize + 'px';
+    ctx.scale(dpr, dpr);
+
+    ctx.lineCap = 'square';
+    ctx.lineWidth = 2;
+
+    function draw(x, y, width, height) {
+      const leftToRight = Math.random() >= 0.5;
+      if (leftToRight) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + width, y + height);
+      } else {
+        ctx.moveTo(x + width, y);
+        ctx.lineTo(x, y + height);
+      }
+      ctx.stroke();
+    }
+
+    // Limpa o canvas com branco
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+    // Desenha padrão em área delimitada
+    function drawPatternArea(xStart, yStart, width, height) {
+      for(let x = xStart; x < xStart + width; x += step) {
+        for(let y = yStart; y < yStart + height; y += step) {
+          ctx.beginPath();
+          draw(x, y, step, step);
+        }
+      }
+    }
+
+    // Desenha as 4 bordas com padrão
+    ctx.strokeStyle = '#000'; // cor padrão do padrão
+    drawPatternArea(0, 0, canvasSize, borderWidth); // superior
+    drawPatternArea(0, canvasSize - borderWidth, canvasSize, borderWidth); // inferior
+    drawPatternArea(0, borderWidth, borderWidth, canvasSize - 2 * borderWidth); // esquerda
+    drawPatternArea(canvasSize - borderWidth, borderWidth, borderWidth, canvasSize - 2 * borderWidth); // direita
+
+    // Desenha moldura sólida interna (retângulo)
+    const rectX = borderWidth + innerMargin;
+    const rectY = borderWidth + innerMargin;
+    const rectSize = canvasSize - 2 * (borderWidth + innerMargin);
+
+    ctx.strokeStyle = '#333'; // cor da moldura sólida
+    ctx.lineWidth = 3;
+    ctx.strokeRect(rectX, rectY, rectSize, rectSize);
+
+    // --- Código DLA ---
+
+    const widthDLA = rectSize;
+    const heightDLA = rectSize;
+
+    // Criar uma grade para marcar as partículas agregadas
+    const grid = [];
+    for(let i = 0; i < widthDLA; i++) {
+      grid[i] = [];
+      for(let j = 0; j < heightDLA; j++) {
+        grid[i][j] = false;
+      }
+    }
+
+    // Semente inicial: o centro do quadrado interno
+    const centerX = Math.floor(widthDLA / 2);
+    const centerY = Math.floor(heightDLA / 2);
+    grid[centerX][centerY] = true;
+
+    // Desenha o pixel da semente
+    ctx.fillStyle = 'black';
+    ctx.fillRect(rectX + centerX, rectY + centerY, 1, 1);
+
+    // Função que cria uma nova partícula na borda do quadrado interno
+    function createParticle() {
+      const edge = Math.floor(Math.random() * 4);
+      let x, y;
+      if (edge === 0) { // topo
+        x = Math.floor(Math.random() * widthDLA);
+        y = 0;
+      } else if (edge === 1) { // direita
+        x = widthDLA - 1;
+        y = Math.floor(Math.random() * heightDLA);
+      } else if (edge === 2) { // inferior
+        x = Math.floor(Math.random() * widthDLA);
+        y = heightDLA - 1;
+      } else { // esquerda
+        x = 0;
+        y = Math.floor(Math.random() * heightDLA);
+      }
+      return {x, y};
+    }
+
+    // Verifica se partícula está perto de um agregado
+    function isAdjacent(x, y) {
+      const dirs = [
+        [-1, 0], [1, 0],
+        [0, -1], [0, 1],
+        [-1, -1], [-1, 1],
+        [1, -1], [1, 1],
+      ];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && nx < widthDLA && ny >= 0 && ny < heightDLA) {
+          if (grid[nx][ny]) return true;
+        }
+      }
+      return false;
+    }
+
+    // Move partícula randomicamente dentro do quadrado interno
+    function moveParticle(p) {
+      const direction = Math.floor(Math.random() * 4);
+      if (direction === 0 && p.x > 0) p.x--;
+      else if (direction === 1 && p.x < widthDLA - 1) p.x++;
+      else if (direction === 2 && p.y > 0) p.y--;
+      else if (direction === 3 && p.y < heightDLA - 1) p.y++;
+    }
+
+    // Executa a simulação DLA
+    function runDLA(iterations) {
+      for (let i = 0; i < iterations; i++) {
+        let particle = createParticle();
+        let stuck = false;
+        let steps = 0;
+        const maxSteps = 10000; // evita loop infinito
+
+        while (!stuck && steps < maxSteps) {
+          moveParticle(particle);
+
+          // Se a partícula está fora do quadrado interno, reinicia
+          if (particle.x < 0 || particle.x >= widthDLA || particle.y < 0 || particle.y >= heightDLA) {
+            particle = createParticle();
+          }
+
+          // Se partícula está adjacente a agregado, cola
+          if (isAdjacent(particle.x, particle.y)) {
+            grid[particle.x][particle.y] = true;
+            ctx.fillRect(rectX + particle.x, rectY + particle.y, 1, 1);
+            stuck = true;
+          }
+          steps++;
+        }
+      }
+    }
+
+    // Roda o DLA com número de iterações (ajuste conforme o desempenho)
+    runDLA(200000);
+
+  </script>
+</body>
+</html>
