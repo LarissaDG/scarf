@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Moldura com padrão e DLA exportável</title>
+  <style>
+    body, html {
+      margin: 0; padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #000;
+    }
+    canvas {
+      border: 1px solid #333;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <canvas></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const neonColors = [
+      '#F2059F', // rosa neon
+      '#17FA2E', // verde neon
+      '#0554F2', // azul escuro neon
+      '#05F2AF', // ciano neon
+      '#ffff00', // amarelo neon
+      '#A020F0'  // roxo neon
+    ];
+
+    const palette = {
+      background: "#000",
+      pattern: neonColors[Math.floor(Math.random() * neonColors.length)],
+      frame: neonColors[Math.floor(Math.random() * neonColors.length)],
+      dla: neonColors
+    };
+
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const canvasSize = 300;
+    const borderWidth = 20;
+    const innerMargin = 10;
+    const dpr = window.devicePixelRatio || 1;
+    const cellsInBorder = 4;
+    const step = borderWidth / cellsInBorder;
+
+    canvas.width = canvasSize * dpr;
+    canvas.height = canvasSize * dpr;
+    canvas.style.width = canvasSize + 'px';
+    canvas.style.height = canvasSize + 'px';
+    ctx.scale(dpr, dpr);
+
+    ctx.lineCap = 'square';
+    ctx.lineWidth = 2;
+
+    function draw(x, y, width, height) {
+      const leftToRight = Math.random() >= 0.5;
+      if (leftToRight) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + width, y + height);
+      } else {
+        ctx.moveTo(x + width, y);
+        ctx.lineTo(x, y + height);
+      }
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = palette.background;
+    ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+    function drawPatternArea(xStart, yStart, width, height) {
+      for(let x = xStart; x < xStart + width; x += step) {
+        for(let y = yStart; y < yStart + height; y += step) {
+          ctx.beginPath();
+          draw(x, y, step, step);
+        }
+      }
+    }
+
+    ctx.strokeStyle = palette.pattern;
+    drawPatternArea(0, 0, canvasSize, borderWidth);
+    drawPatternArea(0, canvasSize - borderWidth, canvasSize, borderWidth);
+    drawPatternArea(0, borderWidth, borderWidth, canvasSize - 2 * borderWidth);
+    drawPatternArea(canvasSize - borderWidth, borderWidth, borderWidth, canvasSize - 2 * borderWidth);
+
+    const rectX = borderWidth + innerMargin;
+    const rectY = borderWidth + innerMargin;
+    const rectSize = canvasSize - 2 * (borderWidth + innerMargin);
+
+    ctx.strokeStyle = palette.frame;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(rectX, rectY, rectSize, rectSize);
+
+    const widthDLA = rectSize;
+    const heightDLA = rectSize;
+    const grid = Array.from({ length: widthDLA }, () => Array(heightDLA).fill(false));
+    const centerX = Math.floor(widthDLA / 2);
+    const centerY = Math.floor(heightDLA / 2);
+    grid[centerX][centerY] = true;
+    ctx.fillStyle = palette.dla[0];
+    ctx.fillRect(rectX + centerX, rectY + centerY, 1, 1);
+
+    function createParticle() {
+      const edge = Math.floor(Math.random() * 4);
+      let x, y;
+      if (edge === 0) { x = Math.floor(Math.random() * widthDLA); y = 0; }
+      else if (edge === 1) { x = widthDLA - 1; y = Math.floor(Math.random() * heightDLA); }
+      else if (edge === 2) { x = Math.floor(Math.random() * widthDLA); y = heightDLA - 1; }
+      else { x = 0; y = Math.floor(Math.random() * heightDLA); }
+      return {x, y};
+    }
+
+    function isAdjacent(x, y) {
+      const dirs = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+      return dirs.some(([dx, dy]) => {
+        const nx = x + dx, ny = y + dy;
+        return nx >= 0 && ny >= 0 && nx < widthDLA && ny < heightDLA && grid[nx][ny];
+      });
+    }
+
+    function moveParticle(p) {
+      const dir = Math.floor(Math.random() * 4);
+      if (dir === 0 && p.x > 0) p.x--;
+      else if (dir === 1 && p.x < widthDLA - 1) p.x++;
+      else if (dir === 2 && p.y > 0) p.y--;
+      else if (dir === 3 && p.y < heightDLA - 1) p.y++;
+    }
+
+    function runDLA(iterations) {
+      for (let i = 0; i < iterations; i++) {
+        let p = createParticle(), stuck = false, steps = 0, max = 10000;
+        while (!stuck && steps < max) {
+          moveParticle(p);
+          if (p.x < 0 || p.y < 0 || p.x >= widthDLA || p.y >= heightDLA) {
+            p = createParticle();
+          }
+          if (isAdjacent(p.x, p.y)) {
+            grid[p.x][p.y] = true;
+            ctx.fillStyle = palette.dla[Math.floor(Math.random() * palette.dla.length)];
+            ctx.fillRect(rectX + p.x, rectY + p.y, 1, 1);
+            stuck = true;
+          }
+          steps++;
+        }
+      }
+    }
+
+    runDLA(200000);
+
+    const btn = document.createElement('button');
+    btn.textContent = 'Exportar para PDF 50x50cm 300dpi';
+    btn.style.position = 'fixed';
+    btn.style.top = '10px';
+    btn.style.left = '10px';
+    btn.style.zIndex = 1000;
+    btn.onclick = exportToPDF;
+    document.body.appendChild(btn);
+
+    async function exportToPDF() {
+      const cmToInch = 1 / 2.54;
+      const widthCM = 50, heightCM = 50, dpi = 300;
+      const widthPx = Math.round(widthCM * cmToInch * dpi);
+      const heightPx = Math.round(heightCM * cmToInch * dpi);
+
+      const offscreen = document.createElement('canvas');
+      offscreen.width = widthPx;
+      offscreen.height = heightPx;
+      const offCtx = offscreen.getContext('2d');
+      const scale = widthPx / canvasSize;
+
+      offCtx.fillStyle = '#000';
+      offCtx.fillRect(0, 0, widthPx, heightPx);
+      offCtx.lineCap = 'square';
+      offCtx.lineWidth = 2 * scale;
+      offCtx.strokeStyle = palette.pattern;
+
+      function drawOff(x, y, width, height) {
+        const leftToRight = Math.random() >= 0.5;
+        if (leftToRight) {
+          offCtx.moveTo(x, y);
+          offCtx.lineTo(x + width, y + height);
+        } else {
+          offCtx.moveTo(x + width, y);
+          offCtx.lineTo(x, y + height);
+        }
+        offCtx.stroke();
+      }
+
+      function drawPatternAreaOff(xStart, yStart, width, height) {
+        for(let x = xStart; x < xStart + width; x += step) {
+          for(let y = yStart; y < yStart + height; y += step) {
+            offCtx.beginPath();
+            drawOff(x * scale, y * scale, step * scale, step * scale);
+          }
+        }
+      }
+
+      drawPatternAreaOff(0, 0, canvasSize, borderWidth);
+      drawPatternAreaOff(0, canvasSize - borderWidth, canvasSize, borderWidth);
+      drawPatternAreaOff(0, borderWidth, borderWidth, canvasSize - 2 * borderWidth);
+      drawPatternAreaOff(canvasSize - borderWidth, borderWidth, borderWidth, canvasSize - 2 * borderWidth);
+
+      offCtx.strokeStyle = palette.frame;
+      offCtx.lineWidth = 3 * scale;
+      offCtx.strokeRect(
+        (borderWidth + innerMargin) * scale,
+        (borderWidth + innerMargin) * scale,
+        rectSize * scale,
+        rectSize * scale
+      );
+
+      for (let x = 0; x < widthDLA; x++) {
+        for (let y = 0; y < heightDLA; y++) {
+          if (grid[x][y]) {
+            offCtx.fillStyle = palette.dla[Math.floor(Math.random() * palette.dla.length)];
+            offCtx.fillRect((rectX + x) * scale, (rectY + y) * scale, scale, scale);
+          }
+        }
+      }
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: 'cm', format: [widthCM, heightCM] });
+      const imgData = offscreen.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, widthCM, heightCM);
+      pdf.save('moldura_dla_50cm_300dpi.pdf');
+    }
+  </script>
+</body>
+</html>
