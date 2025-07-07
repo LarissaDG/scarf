@@ -29,7 +29,7 @@
     }
 
     const palette = {
-      background: "#000", // fundo preto para destacar as cores neon
+      background: "#000",
       pattern: getRandomNeonColor(),
       frame: getRandomNeonColor(),
       dla: [getRandomNeonColor(), getRandomNeonColor(), getRandomNeonColor()]
@@ -137,6 +137,7 @@
           }
           if (isAdjacent(p.x, p.y)) {
             grid[p.x][p.y] = true;
+            ctx.fillStyle = palette.dla[Math.floor(Math.random() * palette.dla.length)];
             ctx.fillRect(rectX + p.x, rectY + p.y, 1, 1);
             stuck = true;
           }
@@ -145,9 +146,8 @@
       }
     }
 
-    runDLA(200000); // simulação completa
+    runDLA(200000);
 
-    // ----------- Exportação para PDF ----------------
     async function exportToPDF() {
       const cmToInch = 1 / 2.54;
       const widthCM = 50, heightCM = 50, dpi = 300;
@@ -161,11 +161,11 @@
 
       const scale = widthPx / canvasSize;
 
-      offCtx.fillStyle = '#fff';
+      offCtx.fillStyle = palette.background;
       offCtx.fillRect(0, 0, widthPx, heightPx);
       offCtx.lineCap = 'square';
       offCtx.lineWidth = 2 * scale;
-      offCtx.strokeStyle = '#000';
+      offCtx.strokeStyle = palette.pattern;
 
       function drawOff(x, y, width, height) {
         const leftToRight = Math.random() >= 0.5;
@@ -193,7 +193,7 @@
       drawPatternAreaOff(0, borderWidth, borderWidth, canvasSize - 2 * borderWidth);
       drawPatternAreaOff(canvasSize - borderWidth, borderWidth, borderWidth, canvasSize - 2 * borderWidth);
 
-      offCtx.strokeStyle = '#333';
+      offCtx.strokeStyle = palette.frame;
       offCtx.lineWidth = 3 * scale;
       offCtx.strokeRect(
         (borderWidth + innerMargin) * scale,
@@ -202,11 +202,10 @@
         rectSize * scale
       );
 
-      // Usar a mesma `grid` para desenhar no PDF
-      offCtx.fillStyle = 'black';
       for (let x = 0; x < widthDLA; x++) {
         for (let y = 0; y < heightDLA; y++) {
           if (grid[x][y]) {
+            offCtx.fillStyle = palette.dla[Math.floor(Math.random() * palette.dla.length)];
             offCtx.fillRect((rectX + x) * scale, (rectY + y) * scale, scale, scale);
           }
         }
