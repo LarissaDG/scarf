@@ -23,6 +23,18 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
+    function getRandomNeonColor(hueBase = Math.random() * 360) {
+      const hue = (hueBase + Math.random() * 60 - 30 + 360) % 360;
+      return `hsl(${hue}, 100%, 60%)`;
+    }
+
+    const palette = {
+      background: "#000", // fundo preto para destacar as cores neon
+      pattern: getRandomNeonColor(),
+      frame: getRandomNeonColor(),
+      dla: [getRandomNeonColor(), getRandomNeonColor(), getRandomNeonColor()]
+    };
+
     const canvas = document.querySelector('canvas');
     const ctx = canvas.getContext('2d');
 
@@ -54,7 +66,7 @@
       ctx.stroke();
     }
 
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = palette.background;
     ctx.fillRect(0, 0, canvasSize, canvasSize);
 
     function drawPatternArea(xStart, yStart, width, height) {
@@ -66,7 +78,7 @@
       }
     }
 
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = palette.pattern;
     drawPatternArea(0, 0, canvasSize, borderWidth);
     drawPatternArea(0, canvasSize - borderWidth, canvasSize, borderWidth);
     drawPatternArea(0, borderWidth, borderWidth, canvasSize - 2 * borderWidth);
@@ -76,7 +88,7 @@
     const rectY = borderWidth + innerMargin;
     const rectSize = canvasSize - 2 * (borderWidth + innerMargin);
 
-    ctx.strokeStyle = '#333';
+    ctx.strokeStyle = palette.frame;
     ctx.lineWidth = 3;
     ctx.strokeRect(rectX, rectY, rectSize, rectSize);
 
@@ -86,7 +98,7 @@
     const centerX = Math.floor(widthDLA / 2);
     const centerY = Math.floor(heightDLA / 2);
     grid[centerX][centerY] = true;
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = palette.dla[0];
     ctx.fillRect(rectX + centerX, rectY + centerY, 1, 1);
 
     function createParticle() {
