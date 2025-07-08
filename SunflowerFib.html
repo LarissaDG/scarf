@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Interactive Fibonacci Sunflower</title>
+<style>
+  body {
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+  #canvas {
+    background: #222;
+    border: 1px solid #444;
+    margin-top: 10px;
+  }
+  .controls {
+    margin-top: 10px;
+    display: flex;
+    gap: 30px;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  label {
+    margin-bottom: 5px;
+  }
+  input[type="range"] {
+    width: 150px;
+  }
+</style>
+</head>
+<body>
+
+<h2>Interactive Fibonacci Sunflower</h2>
+
+<div class="controls">
+  <div class="control-group">
+    <label for="seedCount">Number of Seeds: <span id="seedCountValue">1000</span></label>
+    <input type="range" id="seedCount" min="100" max="3000" value="1000" step="50" />
+  </div>
+
+  <div class="control-group">
+    <label for="seedSize">Seed Size: <span id="seedSizeValue">3</span></label>
+    <input type="range" id="seedSize" min="1" max="10" value="3" step="0.5" />
+  </div>
+
+  <div class="control-group">
+    <label for="spacing">Spacing Scale: <span id="spacingValue">6</span></label>
+    <input type="range" id="spacing" min="1" max="15" value="6" step="0.5" />
+  </div>
+</div>
+
+<canvas id="canvas" width="800" height="800"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+
+const seedCountSlider = document.getElementById('seedCount');
+const seedSizeSlider = document.getElementById('seedSize');
+const spacingSlider = document.getElementById('spacing');
+
+const seedCountValue = document.getElementById('seedCountValue');
+const seedSizeValue = document.getElementById('seedSizeValue');
+const spacingValue = document.getElementById('spacingValue');
+
+const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~2.399963 radians or 137.5°
+
+function drawSunflower(seedCount, seedSize, spacing) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#FFD700'; // golden color for seeds
+  
+  for(let n = 0; n < seedCount; n++) {
+    const r = spacing * Math.sqrt(n);
+    const theta = n * goldenAngle;
+
+    const x = centerX + r * Math.cos(theta);
+    const y = centerY + r * Math.sin(theta);
+
+    ctx.beginPath();
+    ctx.arc(x, y, seedSize, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+}
+
+// Initial draw
+drawSunflower(+seedCountSlider.value, +seedSizeSlider.value, +spacingSlider.value);
+
+// Update labels and redraw on slider change
+function update() {
+  const seedCount = +seedCountSlider.value;
+  const seedSize = +seedSizeSlider.value;
+  const spacing = +spacingSlider.value;
+
+  seedCountValue.textContent = seedCount;
+  seedSizeValue.textContent = seedSize.toFixed(1);
+  spacingValue.textContent = spacing.toFixed(1);
+
+  drawSunflower(seedCount, seedSize, spacing);
+}
+
+seedCountSlider.addEventListener('input', update);
+seedSizeSlider.addEventListener('input', update);
+spacingSlider.addEventListener('input', update);
+</script>
+
+</body>
+</html>

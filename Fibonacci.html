@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rotated Fibonacci Spiral Replicas</title>
+<style>
+  body {
+    margin: 0; 
+    background: #111; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh;
+  }
+  canvas {
+    background: #222;
+    border: 1px solid #555;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="800" height="800"></canvas>
+<script>
+// Dynamic programming Fibonacci function that returns array of Fibonacci numbers up to n
+function fibonacciDP(n) {
+  const fib = [0, 1];
+  for(let i = 2; i <= n; i++) {
+    fib[i] = fib[i-1] + fib[i-2];
+  }
+  return fib;
+}
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+
+const n = 20;  // number of Fibonacci numbers to generate
+const fibs = fibonacciDP(n);
+
+const angleStep = Math.PI / 6; // 30 degrees per step in the spiral
+const scale = 5; // scale factor for spacing
+
+const replicas = 10; // Number of rotated replicas
+const fullCircle = 2 * Math.PI;
+const rotationStep = fullCircle / replicas;
+
+ctx.lineWidth = 2;
+ctx.strokeStyle = 'white';
+ctx.fillStyle = 'rgba(255,255,255,0.2)';
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+for(let r = 0; r < replicas; r++) {
+  const baseRotation = r * rotationStep;
+  
+  // For each replica, draw the spiral
+  for(let i = 1; i <= n; i++) {
+    const radius = fibs[i];
+    const spiralAngle = i * angleStep + baseRotation;
+
+    // Calculate spiral position with the added rotation
+    const x = centerX + scale * radius * Math.cos(spiralAngle);
+    const y = centerY + scale * radius * Math.sin(spiralAngle);
+
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+</script>
+</body>
+</html>
