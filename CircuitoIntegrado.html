@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Circuito Generativo Avançado</title>
+  <style>
+    body { margin: 0; background: #fff; }
+    canvas { display: block; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<canvas></canvas>
+<script>
+const canvas = document.querySelector('canvas');
+const context = canvas.getContext('2d');
+
+const size = 800;
+const cols = 40;
+const rows = 40;
+const cellSize = size / cols;
+
+const occupied = Array(cols).fill().map(() => Array(rows).fill(false));
+
+canvas.width = size;
+canvas.height = size;
+
+context.lineWidth = 2.5;
+context.lineCap = 'round';
+context.strokeStyle = '#111';
+context.fillStyle = '#111';
+
+function drawDonut(x, y, r = 4) {
+  context.beginPath();
+  context.arc(x, y, r, 0, Math.PI * 2);
+  context.stroke();
+
+  context.beginPath();
+  context.arc(x, y, r / 2, 0, Math.PI * 2);
+  context.fillStyle = "#fff";
+  context.fill();
+  context.fillStyle = "#111";
+}
+
+function gridToPx(x, y) {
+  return [
+    x * cellSize + cellSize / 2,
+    y * cellSize + cellSize / 2
+  ];
+}
+
+function markOccupied(x, y) {
+  if (x >= 0 && x < cols && y >= 0 && y < rows) {
+    occupied[x][y] = true;
+  }
+}
+
+function isOccupied(x, y) {
+  return x < 0 || x >= cols || y < 0 || y >= rows || occupied[x][y];
+}
+
+function tryPath(x, y, maxSteps = 8) {
+  let path = [[x, y]];
+  let cx = x, cy = y;
+  markOccupied(cx, cy);
+
+  const dirs = [
+    [1, 0], [-1, 0], [0, 1], [0, -1]
+  ];
+
+  for (let i = 0; i < maxSteps; i++) {
+    let valid = [];
+
+    for (let [dx, dy] of dirs) {
+      let nx = cx + dx;
+      let ny = cy + dy;
+      if (!isOccupied(nx, ny)) {
+        valid.push([nx, ny]);
+      }
+    }
+
+    if (valid.length === 0) break;
+
+    let [nx, ny] = valid[Math.floor(Math.random() * valid.length)];
+    path.push([nx, ny]);
+    markOccupied(nx, ny);
+    cx = nx;
+    cy = ny;
+  }
+
+  return path;
+}
+
+function drawPath(path) {
+  if (path.length < 2) return;
+
+  context.beginPath();
+  let [x0, y0] = gridToPx(path[0][0], path[0][1]);
+  context.moveTo(x0, y0);
+
+  for (let i = 1; i < path.length; i++) {
+    let [x, y] = gridToPx(path[i][0], path[i][1]);
+    context.lineTo(x, y);
+  }
+
+  context.stroke();
+
+  // desenha pads
+  drawDonut(x0, y0);
+  let [xf, yf] = gridToPx(path[path.length - 1][0], path[path.length - 1][1]);
+  drawDonut(xf, yf);
+}
+
+function generateCircuit() {
+  const attempts = 600;
+
+  for (let i = 0; i < attempts; i++) {
+    let x = Math.floor(Math.random() * cols);
+    let y = Math.floor(Math.random() * rows);
+
+    if (occupied[x][y]) continue;
+
+    const path = tryPath(x, y, Math.floor(Math.random() * 6) + 3);
+    drawPath(path);
+  }
+}
+
+generateCircuit();
+</script>
+</body>
+</html>

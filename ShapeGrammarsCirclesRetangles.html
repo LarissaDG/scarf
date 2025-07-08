@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shape Grammar PNG</title>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<button onclick="download()">Download PNG</button>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const size = 800;
+canvas.width = size;
+canvas.height = size;
+
+// === Módulo Base ===
+function drawModule(x, y, w, h) {
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h); // quadrado
+  ctx.beginPath();
+  ctx.arc(x + w/2, y + h/2, Math.min(w,h)/4, 0, 2 * Math.PI); // círculo interno
+  ctx.stroke();
+}
+
+// === Shape Grammar ===
+function applyGrammar(x, y, w, h, depth) {
+  if (depth > 4 || w < 40 || h < 40) {
+    drawModule(x, y, w, h);
+    return;
+  }
+
+  const choice = Math.floor(Math.random() * 3);
+  if (choice === 0) {
+    // Dividir em 2 verticalmente
+    applyGrammar(x, y, w / 2, h, depth + 1);
+    applyGrammar(x + w / 2, y, w / 2, h, depth + 1);
+  } else if (choice === 1) {
+    // Dividir em 2 horizontalmente
+    applyGrammar(x, y, w, h / 2, depth + 1);
+    applyGrammar(x, y + h / 2, w, h / 2, depth + 1);
+  } else {
+    // Dividir em 4
+    applyGrammar(x, y, w / 2, h / 2, depth + 1);
+    applyGrammar(x + w / 2, y, w / 2, h / 2, depth + 1);
+    applyGrammar(x, y + h / 2, w / 2, h / 2, depth + 1);
+    applyGrammar(x + w / 2, y + h / 2, w / 2, h / 2, depth + 1);
+  }
+}
+
+applyGrammar(0, 0, size, size, 0);
+
+// === Download PNG ===
+function download() {
+  const link = document.createElement('a');
+  link.download = 'shape-grammar.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+</script>
+</body>
+</html>
