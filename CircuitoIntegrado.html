@@ -2,32 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Circuito Generativo Avançado</title>
+  <title>Circuito Generativo com Exportação</title>
   <style>
-    body { margin: 0; background: #fff; }
-    canvas { display: block; margin: 0 auto; }
+    body {
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      display: block;
+      margin: 20px 0;
+      background: #000;
+    }
+    button {
+      background: #F24607;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #c63604;
+    }
   </style>
 </head>
 <body>
+
 <canvas></canvas>
+<button onclick="saveImage()">📥 Exportar como PNG</button>
+
 <script>
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
 const size = 800;
-const cols = 40;
-const rows = 40;
-const cellSize = size / cols;
-
-const occupied = Array(cols).fill().map(() => Array(rows).fill(false));
-
 canvas.width = size;
 canvas.height = size;
 
+const frameColor = '#F24607';
+const frameMargin = 40;
+const innerMargin = 30;
+const contentStart = frameMargin + innerMargin;
+const contentSize = size - 2 * (frameMargin + innerMargin);
+
+const cols = 40;
+const rows = 40;
+const cellSize = contentSize / cols;
+
+const occupied = Array(cols).fill().map(() => Array(rows).fill(false));
+
+// Degradê
+const gradientStart = [38, 10, 183];   // #260AB7
+const gradientEnd   = [195, 241, 8];   // #C3F108
+
+function lerpColor(a, b, t) {
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t
+  ];
+}
+
+function colorToHex(rgb) {
+  return '#' + rgb.map(c => Math.round(c).toString(16).padStart(2, '0')).join('');
+}
+
+context.fillStyle = "#000";
+context.fillRect(0, 0, size, size);
+
+// Moldura
+context.strokeStyle = frameColor;
+context.lineWidth = 12;
+context.strokeRect(frameMargin, frameMargin, size - 2 * frameMargin, size - 2 * frameMargin);
+
+// Circuit
 context.lineWidth = 2.5;
 context.lineCap = 'round';
-context.strokeStyle = '#111';
-context.fillStyle = '#111';
 
 function drawDonut(x, y, r = 4) {
   context.beginPath();
@@ -36,15 +92,14 @@ function drawDonut(x, y, r = 4) {
 
   context.beginPath();
   context.arc(x, y, r / 2, 0, Math.PI * 2);
-  context.fillStyle = "#fff";
+  context.fillStyle = "#000";
   context.fill();
-  context.fillStyle = "#111";
 }
 
 function gridToPx(x, y) {
   return [
-    x * cellSize + cellSize / 2,
-    y * cellSize + cellSize / 2
+    contentStart + x * cellSize + cellSize / 2,
+    contentStart + y * cellSize + cellSize / 2
   ];
 }
 
@@ -93,6 +148,10 @@ function tryPath(x, y, maxSteps = 8) {
 function drawPath(path) {
   if (path.length < 2) return;
 
+  let t = Math.random();
+  let color = lerpColor(gradientStart, gradientEnd, t);
+  context.strokeStyle = colorToHex(color);
+
   context.beginPath();
   let [x0, y0] = gridToPx(path[0][0], path[0][1]);
   context.moveTo(x0, y0);
@@ -104,7 +163,7 @@ function drawPath(path) {
 
   context.stroke();
 
-  // desenha pads
+  // Pads
   drawDonut(x0, y0);
   let [xf, yf] = gridToPx(path[path.length - 1][0], path[path.length - 1][1]);
   drawDonut(xf, yf);
@@ -125,6 +184,14 @@ function generateCircuit() {
 }
 
 generateCircuit();
+
+// Exporta como PNG
+function saveImage() {
+  const link = document.createElement('a');
+  link.download = 'circuito-generativo.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
 </script>
 </body>
 </html>
