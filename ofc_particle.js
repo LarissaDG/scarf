@@ -73,8 +73,8 @@ function mousePressed() {
 }
 
 function keyPressed() {
-  if (key === '+') chaosLevel++;
-  if (key === '-') chaosLevel = max(0, chaosLevel - 1);
+  if (key === 'M' || key === 'm') chaosLevel++;
+  if (key === 'L' || key === 'l') chaosLevel = max(0, chaosLevel - 1);
   if (key === 'A' || key === 'a') clearAllGlitches();
   if (['1','2','3','4'].includes(key)) toggleGlitchFromKey(key);
 }
