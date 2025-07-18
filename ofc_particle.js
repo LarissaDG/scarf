@@ -9,6 +9,7 @@ let glitchOptions = {
   walkStyle: false,
   personality: false,
   infectionRate: false,
+  showEmojis: true,  // NOVO: mostrar emojis
 };
 
 const COLORS = [
@@ -43,12 +44,22 @@ function createUI() {
   createToggle("2️⃣ Walk", '2', 'walkStyle', 20, 140);
   createToggle("3️⃣ Personality", '3', 'personality', 20, 180);
   createToggle("4️⃣ Infection", '4', 'infectionRate', 20, 220);
+  createToggle("🙂 Mostrar Emojis", '5', 'showEmojis', 20, 260);
 
-  let particleSpan = createSpan("Particles: ").position(20, 270);
+  let particleSpan = createSpan("Particles: ").position(20, 300);
   particleSpan.style('color', 'white');
   particleSlider = createSlider(1, 500, 300, 1);
-  particleSlider.position(90, 270);
+  particleSlider.position(90, 300);
   particleSlider.input(() => spawnParticles(particleSlider.value()));
+}
+
+function createToggle(label, keyText, key, x, y) {
+  buttons[key] = createButton(`${label} [${keyText}]`);
+  buttons[key].position(x, y);
+  buttons[key].mousePressed(() => {
+    glitchOptions[key] = !glitchOptions[key];
+    updateButtonStates();
+  });
 }
 
 function draw() {
@@ -76,12 +87,38 @@ function keyPressed() {
   if (key === 'M' || key === 'm') chaosLevel++;
   if (key === 'L' || key === 'l') chaosLevel = max(0, chaosLevel - 1);
   if (key === 'A' || key === 'a') clearAllGlitches();
-  if (['1','2','3','4'].includes(key)) toggleGlitchFromKey(key);
+  if (['1','2','3','4','5'].includes(key)) toggleGlitchFromKey(key);
 }
 
 function clearAllGlitches() {
   glitchActive = false;
   for (let p of particles) p.cure();
+}
+
+function toggleGlitch(key) {
+  glitchOptions[key] = !glitchOptions[key];
+  updateButtonStates();
+}
+
+function toggleGlitchFromKey(keyStr) {
+  let map = { 
+    '1': 'velocity', 
+    '2': 'walkStyle', 
+    '3': 'personality', 
+    '4': 'infectionRate',
+    '5': 'showEmojis',
+  };
+  toggleGlitch(map[keyStr]);
+}
+
+function updateButtonStates() {
+  for (let key in glitchOptions) {
+    if (glitchOptions[key]) {
+      buttons[key].style('background-color', '#aaa');
+    } else {
+      buttons[key].style('background-color', '');
+    }
+  }
 }
 
 class Pixel {
@@ -101,15 +138,12 @@ class Pixel {
       this.glitchBehavior();
 
       if (glitchOptions.velocity) {
-        // Aumenta a velocidade apenas temporariamente
         this.pos.add(this.vel.copy().mult(1.3 + chaosLevel * 0.5));
       } else {
-        // Movimento normal enquanto bugado
         this.pos.add(this.vel.copy().mult(0.5 + chaosLevel * 0.3));
       }
 
     } else {
-      // Movimento normal fora do bug
       this.pos.add(this.vel.copy().mult(0.5 + chaosLevel * 0.3));
     }
 
@@ -117,19 +151,15 @@ class Pixel {
   }
 
   glitchBehavior() {
-
-    //Op2
     if (glitchOptions.walkStyle) {
       this.pos.x += sin(frameCount * 0.3) * 2;
       this.pos.y += cos(frameCount * 0.2) * 2;
     }
 
-    //Op3
     if (glitchOptions.personality) {
-      this.emotionBehavior()
+      this.emotionBehavior();
     }
 
-    //Op4
     if (glitchOptions.infectionRate) {
       for (let other of particles) {
         if (!other.bugged && dist(this.pos.x, this.pos.y, other.pos.x, other.pos.y) < 40) {
@@ -149,7 +179,12 @@ class Pixel {
     if (this.bugged && glitchOptions.personality) {
       textSize(12);
       fill(255);
-      text(this.personality, this.pos.x + 6, this.pos.y - 6);
+      if (glitchOptions.showEmojis) {
+        text(this.personality, this.pos.x + 6, this.pos.y - 6);
+      } else {
+        // Se quiser um marcador discreto, pode usar algo como:
+        // text('.', this.pos.x + 6, this.pos.y - 6);
+      }
     }
   }
 
@@ -176,35 +211,26 @@ class Pixel {
   emotionBehavior() {
     switch(this.personality) {
       case "😄":
-        // Exemplo: particula feliz pula um pouco
-        this.pos.y += sin(frameCount * 0.2) * 3; //ultimo valor controla a altura
-        this.c = color('#FFCC00'); //yellow
+        this.pos.y += sin(frameCount * 0.2) * 3;
+        this.c = color('#FFCC00');
         break;
       case "😢":
-        // Exemplo: particula triste se move lentamente para baixo
         this.pos.y += 0.7;
-        this.c = color('#00FFE1'); //blue or cyan
+        this.c = color('#00FFE1');
         break;
       case "😡":
-        // Exemplo: particula zangada sacode-se lateralmente
-        // Zig-zag brusco como um "Z" enquanto continua avançando
-        let zigzagAmplitude = 5; // intensidade do desvio lateral
-        let zigzagPeriod = 10;   // quantos frames dura cada trecho
-
-        // Alterna entre -1 e 1 a cada período
+        let zigzagAmplitude = 5;
+        let zigzagPeriod = 10;
         let direction = floor(frameCount / zigzagPeriod) % 2 === 0 ? -1 : 1;
-
-        // Aplica o zigue-zague ao eixo perpendicular (x)
         this.pos.x += direction * zigzagAmplitude;
-        this.c = color("#FF1901") //red
+        this.c = color("#FF1901");
         break;
       case "🍺":
-        // Exemplo: particula bêbada caminha de forma errática, caminhada aleatória (random walk)
-        let stepSize = 3; // passo pequeno e acumulativo
-        let angle = random(TWO_PI); // direção aleatória
+        let stepSize = 3;
+        let angle = random(TWO_PI);
         let step = p5.Vector.fromAngle(angle).mult(stepSize);
         this.pos.add(step);
-        this.c = color('#9801FF');// purple
+        this.c = color('#9801FF');
         break;
     }
   }
@@ -219,31 +245,5 @@ function spawnParticles(count) {
     let personality = random(PERSONALITIES);
     let colorGroup = random(COLORS);
     particles.push(new Pixel(x, y, personality, colorGroup));
-  }
-}
-
-function createToggle(label, keyText, key, x, y) {
-  buttons[key] = createButton(`${label} [${keyText}]`);
-  buttons[key].position(x, y);
-  buttons[key].mousePressed(() => toggleGlitch(key));
-}
-
-function toggleGlitch(key) {
-  glitchOptions[key] = !glitchOptions[key];
-  updateButtonStates();
-}
-
-function toggleGlitchFromKey(keyStr) {
-  let map = { '1': 'velocity', '2': 'walkStyle', '3': 'personality', '4': 'infectionRate' };
-  toggleGlitch(map[keyStr]);
-}
-
-function updateButtonStates() {
-  for (let key in glitchOptions) {
-    if (glitchOptions[key]) {
-      buttons[key].style('background-color', '#aaa');
-    } else {
-      buttons[key].style('background-color', '');
-    }
   }
 }
