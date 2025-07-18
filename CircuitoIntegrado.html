@@ -45,7 +45,7 @@ const size = 800;
 canvas.width = size;
 canvas.height = size;
 
-const frameColor = '#F24607';
+const frameColor = '#05F283';
 const frameMargin = 40;
 const innerMargin = 30;
 const contentStart = frameMargin + innerMargin;
@@ -58,8 +58,8 @@ const cellSize = contentSize / cols;
 const occupied = Array(cols).fill().map(() => Array(rows).fill(false));
 
 // Degradê
-const gradientStart = [38, 10, 183];   // #260AB7
-const gradientEnd   = [195, 241, 8];   // #C3F108
+const gradientStart = [154, 22, 242];   
+const gradientEnd   = [18, 230, 252];  
 
 function lerpColor(a, b, t) {
   return [
@@ -148,7 +148,7 @@ function tryPath(x, y, maxSteps = 8) {
 function drawPath(path) {
   if (path.length < 2) return;
 
-  let t = Math.random();
+  let t = Math.random() ;
   let color = lerpColor(gradientStart, gradientEnd, t);
   context.strokeStyle = colorToHex(color);
 
