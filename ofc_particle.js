@@ -12,10 +12,10 @@ let glitchOptions = {
 };
 
 const COLORS = [
-  { name: 'green', color: '#39FF14' },
-  { name: 'yellow', color: '#FFFF00' },
-  { name: 'orange', color: '#FFA500' },
-  { name: 'pink', color: '#FF69B4' },
+  { name: 'green', color: '#00FF2F' },
+  { name: 'yellow', color: '#FFFA00' },
+  { name: 'orange', color: '#FF8800' },
+  { name: 'pink', color: '#FF008C' },
   { name: 'white', color: '#FFFFFF' },
 ];
 
@@ -26,7 +26,7 @@ function setup() {
   noStroke();
 
   createUI();
-  spawnParticles(300); // default
+  spawnParticles(300);
 
   frameRate(60);
 }
@@ -44,8 +44,8 @@ function createUI() {
   createToggle("3️⃣ Personality", '3', 'personality', 20, 180);
   createToggle("4️⃣ Infection", '4', 'infectionRate', 20, 220);
 
-  let particleSlider = createSpan("Particles: ").position(20, 270);
-  particleSlider.style('color', 'white'); // <-- texto branco
+  let particleSpan = createSpan("Particles: ").position(20, 270);
+  particleSpan.style('color', 'white');
   particleSlider = createSlider(1, 500, 300, 1);
   particleSlider.position(90, 270);
   particleSlider.input(() => spawnParticles(particleSlider.value()));
@@ -99,28 +99,37 @@ class Pixel {
   update() {
     if (this.bugged) {
       this.glitchBehavior();
+
+      if (glitchOptions.velocity) {
+        // Aumenta a velocidade apenas temporariamente
+        this.pos.add(this.vel.copy().mult(1.3 + chaosLevel * 0.5));
+      } else {
+        // Movimento normal enquanto bugado
+        this.pos.add(this.vel.copy().mult(0.5 + chaosLevel * 0.3));
+      }
+
     } else {
+      // Movimento normal fora do bug
       this.pos.add(this.vel.copy().mult(0.5 + chaosLevel * 0.3));
     }
+
     this.wrap();
   }
 
   glitchBehavior() {
-    if (glitchOptions.velocity) {
-      this.vel.add(p5.Vector.random2D().mult(0.5 * chaosLevel));
-    }
 
+    //Op2
     if (glitchOptions.walkStyle) {
       this.pos.x += sin(frameCount * 0.3) * 2;
       this.pos.y += cos(frameCount * 0.2) * 2;
     }
 
-    if (glitchOptions.personality && frameCount % 40 === 0) {
-      this.personality = random(PERSONALITIES);
+    //Op3
+    if (glitchOptions.personality) {
+      this.emotionBehavior()
     }
 
-    this.c = color(random(255), random(255), random(255));
-
+    //Op4
     if (glitchOptions.infectionRate) {
       for (let other of particles) {
         if (!other.bugged && dist(this.pos.x, this.pos.y, other.pos.x, other.pos.y) < 40) {
@@ -153,12 +162,53 @@ class Pixel {
 
   glitch() {
     this.bugged = true;
+
+    if (glitchOptions.personality) {
+      this.personality = random(PERSONALITIES);
+    }
   }
 
   cure() {
     this.bugged = false;
     this.c = this.originalColor;
   }
+
+  emotionBehavior() {
+    switch(this.personality) {
+      case "😄":
+        // Exemplo: particula feliz pula um pouco
+        this.pos.y += sin(frameCount * 0.2) * 3; //ultimo valor controla a altura
+        this.c = color('#FFCC00'); //yellow
+        break;
+      case "😢":
+        // Exemplo: particula triste se move lentamente para baixo
+        this.pos.y += 0.7;
+        this.c = color('#00FFE1'); //blue or cyan
+        break;
+      case "😡":
+        // Exemplo: particula zangada sacode-se lateralmente
+        // Zig-zag brusco como um "Z" enquanto continua avançando
+        let zigzagAmplitude = 5; // intensidade do desvio lateral
+        let zigzagPeriod = 10;   // quantos frames dura cada trecho
+
+        // Alterna entre -1 e 1 a cada período
+        let direction = floor(frameCount / zigzagPeriod) % 2 === 0 ? -1 : 1;
+
+        // Aplica o zigue-zague ao eixo perpendicular (x)
+        this.pos.x += direction * zigzagAmplitude;
+        this.c = color("#FF1901") //red
+        break;
+      case "🍺":
+        // Exemplo: particula bêbada caminha de forma errática, caminhada aleatória (random walk)
+        let stepSize = 3; // passo pequeno e acumulativo
+        let angle = random(TWO_PI); // direção aleatória
+        let step = p5.Vector.fromAngle(angle).mult(stepSize);
+        this.pos.add(step);
+        this.c = color('#9801FF');// purple
+        break;
+    }
+  }
+
 }
 
 function spawnParticles(count) {
